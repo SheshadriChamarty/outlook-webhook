@@ -10,6 +10,12 @@ graph = GraphClient()
 class SubscriptionManager:
 
     def create_subscription(self):
+        # Validate environment variables
+        if not WEBHOOK_URL:
+            return {"error": "WEBHOOK_URL environment variable is not set"}
+        if not USER_ID:
+            return {"error": "USER_ID environment variable is not set"}
+        
         expiration = (datetime.utcnow() + timedelta(hours=24)).isoformat() + "Z"
 
         payload = {
@@ -20,7 +26,15 @@ class SubscriptionManager:
             "clientState": "secretCode123"
         }
 
+        print(f"📤 Creating subscription for user: {USER_ID}")
+        print(f"📤 Webhook URL: {WEBHOOK_URL}")
+        print(f"📤 Payload: {payload}")
+
         resp = graph.post("https://graph.microsoft.com/v1.0/subscriptions", payload)
+        
+        print(f"📥 Response status: {resp.status_code}")
+        print(f"📥 Response body: {resp.text}")
+        
         return resp.json()
 
     def renew_subscription(self, subscription_id):

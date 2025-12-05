@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Request, Response
 from subscription_manager import SubscriptionManager
 from email_processor import fetch_email, process_email
+from mongodb_client import mongodb
 import os
 import json
 from dotenv import load_dotenv
@@ -15,6 +16,32 @@ subscriptions = SubscriptionManager()
 @app.get("/")
 def root():
     return {"message": "Outlook Webhook Running"}
+
+# Endpoint to check token and permissions
+@app.get("/check-token")
+def check_token():
+    from graph_client import GraphClient
+    graph = GraphClient()
+    try:
+        token = graph.get_access_token()
+        # Decode token to see scopes (basic check)
+        import base64
+        parts = token.split('.')
+        if len(parts) >= 2:
+            # Add padding if needed
+            payload = parts[1]
+            payload += '=' * (4 - len(payload) % 4)
+            decoded = base64.urlsafe_b64decode(payload)
+            import json
+            token_data = json.loads(decoded)
+            return {
+                "status": "Token obtained",
+                "scopes": token_data.get("roles", []),
+                "app_id": token_data.get("appid"),
+                "note": "Check that 'Subscription.ReadWrite.All' and 'Mail.Read' are in the roles list"
+            }
+    except Exception as e:
+        return {"error": str(e)}
 
 # Endpoint to manually create subscription
 @app.post("/create-subscription")
@@ -43,7 +70,15 @@ async def email_webhook(request: Request):
                 return Response(content="Empty body", status_code=400)
             
             data = json.loads(body.decode("utf-8"))
+            
+            # Save raw payload to MongoDB
+            print("💾 Saving webhook payload to MongoDB...")
+            try:
+                mongodb.save_webhook_payload(data)
+            except Exception as db_error:
+                print(f"⚠️ MongoDB save error (continuing anyway): {db_error}")
 
+            # Process each notification
             for record in data.get("value", []):
                 message_id = record["resourceData"]["id"]
 
