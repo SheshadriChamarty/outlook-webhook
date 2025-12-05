@@ -70,13 +70,6 @@ async def email_webhook(request: Request):
                 return Response(content="Empty body", status_code=400)
             
             data = json.loads(body.decode("utf-8"))
-            
-            # Save raw payload to MongoDB
-            print("💾 Saving webhook payload to MongoDB...")
-            try:
-                mongodb.save_webhook_payload(data)
-            except Exception as db_error:
-                print(f"⚠️ MongoDB save error (continuing anyway): {db_error}")
 
             # Process each notification
             for record in data.get("value", []):
@@ -85,6 +78,13 @@ async def email_webhook(request: Request):
                 # Fetch complete email
                 print("📩 Fetching email:", message_id)
                 email_json = fetch_email(message_id, USER_ID)
+
+                # Save email_json to MongoDB
+                print("💾 Saving email to MongoDB...")
+                try:
+                    mongodb.save_webhook_payload(email_json)
+                except Exception as db_error:
+                    print(f"⚠️ MongoDB save error (continuing anyway): {db_error}")
 
                 # Process it
                 process_email(email_json)
