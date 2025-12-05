@@ -42,7 +42,7 @@ class MongoDBClient:
 
     def save_webhook_payload(self, payload):
         """Save webhook payload to MongoDB"""
-        if not self.collection:
+        if self.collection is None:
             print("⚠️ MongoDB not connected, skipping save")
             return None
         try:
@@ -60,7 +60,7 @@ class MongoDBClient:
             return None
 
     def close(self):
-        if self.client:
+        if self.client is not None:
             self.client.close()
 
 # Global instance
