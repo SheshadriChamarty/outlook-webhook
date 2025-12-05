@@ -3,6 +3,9 @@ from subscription_manager import SubscriptionManager
 from email_processor import fetch_email, process_email
 import os
 import json
+from dotenv import load_dotenv
+
+load_dotenv()
 
 USER_ID = os.getenv("USER_ID")
 
