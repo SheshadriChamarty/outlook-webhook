@@ -1,6 +1,6 @@
 from langchain_core.prompts import PromptTemplate
 from langchain_google_genai import ChatGoogleGenerativeAI
-from config import GOOGLE_API_KEY  # Import the key from your config
+from ai_config import GOOGLE_API_KEY
 # from langchain_openai import ChatOpenAI
 from utils.formatter import clean_text
 

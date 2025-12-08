@@ -1,3 +1,4 @@
+# FastAPI and server dependencies
 fastapi
 uvicorn
 python-dotenv
@@ -5,3 +6,10 @@ requests
 cryptography
 dotenv
 pymongo
+
+# AI/ML dependencies
+langchain
+langchain-google-genai
+langgraph
+langsmith
+jinja2

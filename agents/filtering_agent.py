@@ -1,14 +1,12 @@
 from langchain_core.prompts import PromptTemplate
 from langchain_google_genai import ChatGoogleGenerativeAI
-from config import GOOGLE_API_KEY
+from ai_config import GOOGLE_API_KEY
 from utils.logger import get_logger
 from utils.formatter import clean_text
 import os
-# --- FIX: Remove old system credentials so it uses the API Key ---
+
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "no_file"
 logger = get_logger(__name__)
-
-print("--- LOADED: Filtering Agent (REST Mode) ---") # Proof file is loaded
 
 def filter_email(email: dict) -> str:
     # 1. Define Prompt

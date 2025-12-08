@@ -1,9 +1,8 @@
 from langchain_core.prompts import PromptTemplate
 from langchain_google_genai import ChatGoogleGenerativeAI
-# Note: Ensure you are importing the correct key you set up earlier
-from config import GOOGLE_API_KEY 
+from ai_config import GOOGLE_API_KEY
 import os
-# --- FIX: Remove old system credentials so it uses the API Key ---
+
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "no_file"
 def generate_response(email: dict) -> str:
     """
