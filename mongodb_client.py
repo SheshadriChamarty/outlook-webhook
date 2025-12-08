@@ -40,12 +40,32 @@ class MongoDBClient:
             self.db = None
             self.collection = None
 
+    def is_message_processed(self, message_id):
+        """Check if a message_id has already been processed"""
+        if self.collection is None:
+            return False
+        try:
+            # Check if any document exists with this message_id in payload.id
+            count = self.collection.count_documents({
+                "payload.id": message_id
+            })
+            return count > 0
+        except Exception as e:
+            print(f"⚠️ Error checking message_id in MongoDB: {e}")
+            return False
+    
     def save_webhook_payload(self, payload):
         """Save webhook payload to MongoDB"""
         if self.collection is None:
             print("⚠️ MongoDB not connected, skipping save")
             return None
         try:
+            # Check if already exists to prevent duplicates
+            message_id = payload.get("id", "")
+            if message_id and self.is_message_processed(message_id):
+                print(f"⚠️ Message {message_id} already exists in MongoDB, skipping save")
+                return None
+            
             document = {
                 "payload": payload,
                 "received_at": datetime.utcnow(),

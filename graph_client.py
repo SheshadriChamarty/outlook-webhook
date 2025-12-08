@@ -77,3 +77,18 @@ class GraphClient:
             "Content-Type": "application/json"
         }
         return requests.patch(url, json=payload, headers=headers)
+    
+    def delete(self, url):
+        if not self.token:
+            self.get_access_token()
+        headers = {"Authorization": f"Bearer {self.token}"}
+        response = requests.delete(url, headers=headers)
+        
+        # If we get 401, token might be expired, try refreshing
+        if response.status_code == 401:
+            print("🔄 Token expired, refreshing...")
+            self.get_access_token()
+            headers["Authorization"] = f"Bearer {self.token}"
+            response = requests.delete(url, headers=headers)
+        
+        return response
