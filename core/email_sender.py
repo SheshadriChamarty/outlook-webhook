@@ -1,10 +1,7 @@
 import smtplib
 from email.message import EmailMessage
 from ai_config import EMAIL_SERVER, EMAIL_PASSWORD, EMAIL_USERNAME, EMAIL_PORT
-from utils.logger import get_logger
 from utils.formatter import clean_text
-
-logger = get_logger(__name__)
 
 def send_triage_report(original_subject: str, report_body: str, target_email: str) -> bool:
     """
@@ -35,14 +32,14 @@ def send_triage_report(original_subject: str, report_body: str, target_email: st
         
         msg.set_content(full_body)
         
-        logger.debug(f"Connecting to SMTP server {EMAIL_SERVER}:{EMAIL_PORT}")
+        print(f"Connecting to SMTP server {EMAIL_SERVER}:{EMAIL_PORT}")
         with smtplib.SMTP(EMAIL_SERVER, int(EMAIL_PORT)) as server:
             server.starttls()
             server.login(EMAIL_USERNAME, EMAIL_PASSWORD)
             server.send_message(msg)
-            logger.info(f"✅ Reply sent successfully to {target_email}")
+            print(f"✅ Reply sent successfully to {target_email}")
         
         return True
     except Exception as e:
-        logger.error(f"❌ Failed to reply: {e}")
+        print(f"❌ Failed to reply: {e}")
         return False

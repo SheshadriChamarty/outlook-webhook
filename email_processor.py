@@ -2,10 +2,8 @@ from graph_client import GraphClient
 from agents.filtering_agent import filter_email
 from agents.response_agent import generate_response
 from core.email_sender import send_triage_report
-from utils.logger import get_logger
 
 graph = GraphClient()
-logger = get_logger(__name__)
 
 def fetch_email(message_id, user_id):
     """Fetches email from Microsoft Graph API."""
@@ -21,16 +19,49 @@ def process_email(email_json):
     3. Sends auto-reply
     
     This function can be called every time without any tracking or deduplication.
+    
+    Handles both:
+    - Direct Graph API response: email_json with direct fields
+    - MongoDB stored format: email_json.payload with nested structure
     """
-    message_id = email_json.get("id", "")
-    subject = email_json.get("subject", "No subject")
-    body_content = email_json.get("body", {}).get("content", "")
-    sender = email_json.get("from", {}).get("emailAddress", {}).get("address", "")
+    # Handle MongoDB format (wrapped in 'payload') or direct Graph API format
+    if "payload" in email_json:
+        email_data = email_json["payload"]
+    else:
+        email_data = email_json
+    
+    # Extract email fields
+    message_id = email_data.get("id", "")
+    subject = email_data.get("subject", "No subject")
+    body_content = email_data.get("body", {}).get("content", "")
+    
+    # Extract sender email (from field)
+    sender = ""
+    if "from" in email_data and email_data["from"]:
+        sender = email_data["from"].get("emailAddress", {}).get("address", "")
+    elif "sender" in email_data and email_data["sender"]:
+        sender = email_data["sender"].get("emailAddress", {}).get("address", "")
+    
+    # Extract recipient email (toRecipients - first recipient)
+    recipient = ""
+    if "toRecipients" in email_data and email_data["toRecipients"]:
+        if len(email_data["toRecipients"]) > 0:
+            recipient = email_data["toRecipients"][0].get("emailAddress", {}).get("address", "")
 
-    logger.info("🔥 New Email Received")
-    logger.info(f"From: {sender}")
-    logger.info(f"Subject: {subject}")
-    logger.info(f"Message ID: {message_id}")
+    print("🔥 New Email Received")
+    print(f"From: {sender}")
+    print(f"To: {recipient}")
+    print(f"Subject: {subject}")
+    print(f"Message ID: {message_id}")
+    print(f"Body length: {len(body_content)} characters")
+    
+    # Validate required fields
+    if not subject:
+        print("⚠️ Warning: Subject is empty")
+    if not body_content:
+        print("⚠️ Warning: Body content is empty")
+    if not sender:
+        print("⚠️ Warning: Sender email is empty - cannot send reply")
 
     # Convert to format expected by agents
     email_dict = {
@@ -41,12 +72,12 @@ def process_email(email_json):
 
     try:
         # 1. Filter Logic
-        logger.info("🔍 Filtering email...")
+        print("🔍 Filtering email...")
         classification = filter_email(email_dict)
-        logger.info(f"   Classification: {classification}")
+        print(f"   Classification: {classification}")
         
         if classification == "spam":
-            logger.info("   Marked as SPAM, skipping.")
+            print("   Marked as SPAM, skipping.")
             return {
                 "status": "skipped",
                 "reason": "spam",
@@ -55,11 +86,11 @@ def process_email(email_json):
             }
 
         # 2. Generate Triage Report
-        logger.info("🤖 Generating AI Triage Report...")
+        print("🤖 Generating AI Triage Report...")
         triage_report = generate_response(email_dict)
 
         # 3. Send Auto-Reply
-        logger.info(f"📧 Sending reply to {sender}...")
+        print(f"📧 Sending reply to {sender}...")
         success = send_triage_report(
             original_subject=subject,
             report_body=triage_report,
@@ -67,7 +98,7 @@ def process_email(email_json):
         )
 
         if success:
-            logger.info(f"✅ Email processed successfully: {subject}")
+            print(f"✅ Email processed successfully: {subject}")
             return {
                 "status": "success",
                 "subject": subject,
@@ -75,7 +106,7 @@ def process_email(email_json):
                 "ai_report": triage_report
             }
         else:
-            logger.error("❌ Failed to send email reply.")
+            print("❌ Failed to send email reply.")
             return {
                 "status": "error",
                 "subject": subject,
@@ -83,7 +114,7 @@ def process_email(email_json):
             }
 
     except Exception as e:
-        logger.error(f"❌ Error processing email: {e}")
+        print(f"❌ Error processing email: {e}")
         return {
             "status": "error",
             "subject": subject,
